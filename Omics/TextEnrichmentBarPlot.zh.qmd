@@ -1,0 +1,251 @@
+---
+title: "文字叠加的富集分析柱状图"
+author:
+  - "**[编辑]** [严彬](https://github.com/yanbin85)"
+  - "**[贡献]** ."
+---
+
+文字叠加富集柱状图是一种用于高密度展示功能富集分析结果（如 GO、KEGG）的可视化工具。它通常以圆角柱状图的长度映射富集显著性（adjust p value），并利用图形内部空间直接叠加标注通路名称与核心基因列表，同时辅以左侧色块与气泡来区分功能分类及基因数量。
+
+这种图表形态改变了传统条形图文本与图形分离的布局，特别适用于需要同时呈现“通路显著性”与“具体驱动基因”的研究场景。其可视化效果不仅优化了绘图空间利用率，还便于研究者在概览生物学功能的同时，快速锁定导致通路富集的关键基因特征。
+
+## Example
+
+![](../images/Omics/TextEnrichmentBarplot_demo.png){fig-alt="NetworkPlot DEMO" fig-align="center" width="60%"}
+
+展示以上示例图的标题/图注，并对示例图xy轴或其他标识物的含义解读。
+
+## 环境配置
+
+-   系统要求 跨平台（Linux/MacOS/Windows）
+
+-   编程语言: R
+
+-   依赖包: `tidyverse`, `ggprism`, `gground`
+
+```{r packages setup, message=FALSE, warning=FALSE, output=FALSE}
+# 安装包
+if (!requireNamespace("tidyverse", quietly = TRUE)) install.packages("tidyverse")
+if (!requireNamespace("ggprism", quietly = TRUE)) install.packages("ggprism")
+if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+if (!requireNamespace("gground", quietly = TRUE)) {
+  devtools::install_github("dxsbiocc/gground")
+}
+# 加载包
+library(tidyverse)
+library(ggprism)
+library(gground)
+```
+
+## 数据准备
+
+-   需包含R内置的数据集（如iris、penguins）和生物医学相关数据集（如组学数据、生存信息、临床指标等）。
+-   生物医学相关数据集需上传至Bizard腾讯云以便获取插入教程的链接，来自于公共数据集的数据最佳，若由个人/组织提供需确保数据能够被公开。数据集大小需小于1MB。
+
+```{r load data, message=FALSE}
+# 构造模拟数据
+use_pathway <- tibble::tribble(
+  ~ONTOLOGY, ~Description, ~p.adjust, ~Count, ~geneID,
+  "BP", "Leukocyte activation", 1e-10, 25, "CD3D/CD3E/CD4/IL7R/LCK",
+  "BP", "T cell selection", 1e-9, 20, "CD28/CTLA4/GATA3/IL2RA",
+  "BP", "Lymphocyte differentiation", 1e-8, 18, "CD8A/CD8B/ZAP70/CCR7",
+  "CC", "External side of plasma membrane", 1e-7, 30, "CD19/CD79A/MS4A1/CR2",
+  "CC", "Immunological synapse", 1e-6, 15, "CD40/CD40LG/ICOS/ICOSLG",
+  "CC", "T cell receptor complex", 1e-5, 12, "CD3G/CD247/TRAC/TRBC1",
+  "MF", "Cytokine receptor binding", 1e-6, 22, "IL2/IL4/IL10/IFNG",
+  "MF", "Antigen binding", 1e-5, 16, "HLA-DRA/HLA-DRB1/CD74",
+  "KEGG", "Th1 and Th2 cell differentiation", 1e-9, 28, "STAT1/STAT4/STAT6/TBX21",
+  "KEGG", "Cell adhesion molecules", 1e-8, 24, "ICAM1/ITGAL/ITGB2/SELPLG"
+)
+
+# 数据预处理：计算绘图所需的辅助坐标
+# 1. 设置因子水平，保证绘图顺序
+use_pathway <- use_pathway %>%
+  mutate(ONTOLOGY = factor(ONTOLOGY, levels = rev(c('BP', 'CC', 'MF', 'KEGG')))) %>%
+  arrange(ONTOLOGY, p.adjust) %>%
+  mutate(Description = factor(Description, levels = Description)) %>%
+  tibble::rowid_to_column('index') # 添加 index 列作为 Y 轴坐标
+
+# 2. 构造左侧分类色块的数据 (rect.data)
+# 定义一些布局参数
+width <- 0.5 
+# 计算 X 轴最大长度，用于绘制底部横线
+xaxis_max <- max(-log10(use_pathway$p.adjust)) + 1
+
+rect.data <- use_pathway %>%
+  group_by(ONTOLOGY) %>%
+  summarize(n = n(), .groups = "drop") %>%
+  mutate(
+    xmin = -3 * width,          # 色块左边界
+    xmax = -2 * width,          # 色块右边界
+    ymax = cumsum(n),           # 色块上边界 (基于累积数量)
+    ymin = lag(ymax, default = 0) + 0.6, # 色块下边界 (留出一点缝隙)
+    ymax = ymax + 0.4           # 调整上边界
+  )
+
+# 查看数据结构
+head(use_pathway)
+head(rect.data)
+```
+
+## 可视化
+
+### 1. 基础绘图(简化版)
+
+该版本主要展示了核心的圆角柱状图和左侧的分类色块，去除了基因列表等过多文本信息，适合需要简洁展示的场景。
+
+```{r fig1.SimpleRound}
+#| label: fig1.SimpleRound
+#| fig-cap: "Simplified Rounded Bar Plot"
+#| out.width: "95%"
+#| warning: false
+#| fig.width: 10
+#| fig.height: 6
+
+# 定义配色
+pal <- c('#eaa052', '#b74147', '#90ad5b', '#23929c')
+
+#其它推荐配色
+#pal <- c('#c3e1e6', '#f3dfb7', '#dcc6dc', '#96c38e')
+#pal <- c('#7bc4e2', '#acd372', '#fbb05b', '#ed6ca4')
+
+# 调整简化版的左侧色块位置参数
+rect.data.simple <- rect.data %>%
+  mutate(
+    xmin = -1.5 * width,
+    xmax = -0.5 * width
+  )
+
+p1 <- ggplot(use_pathway, aes(-log10(p.adjust), y = index, fill = ONTOLOGY)) +
+  # 1. 圆角柱状图主体
+  geom_round_col(aes(y = Description), width = 0.6, alpha = 0.8) +
+  
+  # 2. 通路名称文本
+  geom_text(aes(x = 0.05, label = Description), hjust = 0, size = 4) +
+  
+  # 3. 左侧分类色块
+  geom_round_rect(
+    aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = ONTOLOGY),
+    data = rect.data.simple,
+    radius = unit(2, 'mm'),
+    inherit.aes = FALSE
+  ) +
+  
+  # 4. 左侧分类文字
+  geom_text(
+    aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2, label = ONTOLOGY),
+    data = rect.data.simple,
+    size = 3,
+    inherit.aes = FALSE
+  ) +
+  
+  # 5. 底部装饰横线
+  geom_segment(
+    aes(x = 0, y = 0, xend = xaxis_max, yend = 0),
+    linewidth = 1,
+    inherit.aes = FALSE
+  ) +
+  
+  # 6. 样式调整
+  labs(y = NULL, x = "-log10(p.adjust)") +
+  scale_fill_manual(name = 'Category', values = pal) +
+  scale_x_continuous(breaks = seq(0, xaxis_max, 2), expand = expansion(c(0, 0.1))) +
+  theme_prism() +
+  theme(
+    axis.text.y = element_blank(),
+    axis.line.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.line.x = element_blank(), # 隐藏系统自带的 X 轴线，只保留我们用 geom_segment 画的那条
+    legend.title = element_text(),
+    legend.position = "right" 
+  )
+
+p1
+```
+
+### 2. 进阶绘图 (详细信息版)
+
+该版本在简化版的基础上，增加了： Gene List: 在通路名称下方显示基因列表（灰色斜体）。 Count Bubbles: 在左侧展示富集基因的数量（气泡大小）。 Layout: 调整了左侧色块的位置，为气泡留出空间。
+
+```{r fig2.ComplexRound}
+#| label: fig2.ComplexRound
+#| fig-cap: "Advanced Rounded Plot with Genes and Counts"
+#| out.width: "95%"
+#| warning: false
+#| fig-width: 12
+#| fig-height: 5
+
+p2 <- ggplot(use_pathway, aes(-log10(p.adjust), y = index, fill = ONTOLOGY)) +
+  # 1. 主体圆角柱
+  geom_round_col(aes(y = Description), width = 0.6, alpha = 0.8) +
+  
+  # 2. 通路名称 (Main Title)
+  geom_text(aes(x = 0.05, label = Description), hjust = 0, size = 5) +
+  
+  # 3. 基因列表 (Subtitle) - 灰色斜体
+  geom_text(
+    aes(x = 0.1, label = geneID, colour = ONTOLOGY),
+    hjust = 0, vjust = 2.6, size = 3, fontface = 'italic',
+    show.legend = FALSE
+  ) +
+  
+  # 4. 左侧基因计数气泡 (Count)
+  geom_point(aes(x = -width, size = Count,fill = ONTOLOGY), shape = 21, stroke = 1) +
+  geom_text(aes(x = -width, label = Count), size = 3) +
+  
+  # 5. 左侧分类色块 (Category Label)
+  geom_round_rect(
+    aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = ONTOLOGY),
+    data = rect.data,
+    radius = unit(2, 'mm'),
+    inherit.aes = FALSE
+  ) +
+  geom_text(
+    aes(x = (xmin + xmax) / 2, y = (ymin + ymax) / 2, label = ONTOLOGY),
+    data = rect.data,
+    inherit.aes = FALSE,
+    color = "black", fontface = "bold"
+  ) +
+  
+  # 6. 底部横线
+  geom_segment(
+    aes(x = 0, y = 0, xend = xaxis_max, yend = 0),
+    linewidth = 1.5,
+    inherit.aes = FALSE
+  ) +
+  
+  # 7. 标尺与配色
+  labs(y = NULL, x = "-log10(p.adjust)") +
+  scale_fill_manual(name = 'Category', values = pal) +
+  scale_colour_manual(values = pal) + # 基因文字颜色
+  scale_size_continuous(name = 'Count', range = c(4, 10)) +
+  scale_x_continuous(breaks = seq(0, xaxis_max, 2), expand = expansion(c(0, 0))) +
+  
+  # 8. 主题美化
+  theme_prism() +
+  theme(
+    axis.text.y = element_blank(),
+    axis.line = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.title = element_text(),
+    plot.margin = margin(l = 10, r = 10) # 防止左侧被切
+  )
+
+p2
+```
+
+如果你有需要的话可以选择使用`callout-tip`添加对参数的详细描述。
+
+
+## 应用
+
+该图表样式适用于需要高质量、杂志级配图的场景。相比于传统的点图或条形图，这种布局利用了更丰富的几何元素（圆角、色块）和排版技巧，使得图表在视觉上更加饱满，适合作为文章的 Figure 1 或总结性图表。
+
+## 参考资料
+
+例： 1. Costa, A. M., Machado, J. T., & Quelhas, M. D. (2011). Histogram-based DNA analysis for the visualization of chromosome, genome, and species information. *Bioinformatics, 27*(9), 1207–1214. <https://doi.org/10.1093/bioinformatics/btr131>
+
+## 共享者
+
+-   **编辑**: 您的姓名。
+-   **审阅**: 审阅者姓名。
