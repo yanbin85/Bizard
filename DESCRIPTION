@@ -267,4 +267,6 @@ Remotes:
     haleyjeppson/ggmosaic,
     ibecav/CGPfunctions,
     davidsjoberg/ggstream,
-    dxsbiocc/gground
+    dxsbiocc/gground,
+    jianhong/motifStack,
+    Bioconductor/Biostrings

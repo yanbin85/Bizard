@@ -192,6 +192,8 @@ website:
             href: Omics/MotifPlot.qmd
           - text: "GWAS Circos Plot"
             href: Omics/GwasSnpPlot.qmd
+          - text: "TextEnrichmentBarPlot"
+            href: Omics/TextEnrichmentBarPlot.qmd
 
       - section: "<i class='fa-solid fa-virus-covid'></i> 𝐂𝐋𝐈𝐍𝐈𝐂𝐒"
         contents:

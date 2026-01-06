@@ -24,14 +24,11 @@ A motif plot displays sequence logos where the height of each nucleotide represe
 
 ```{r packages setup, message=FALSE, warning=FALSE, output=FALSE}
 # Install packages
-if (!requireNamespace("BiocManager", quietly = TRUE)) {
-  install.packages("BiocManager")
-}
 if (!requireNamespace("motifStack", quietly = TRUE)) {
-  BiocManager::install("motifStack")
+  remotes::install_github("jianhong/motifStack")
 }
 if (!requireNamespace("Biostrings", quietly = TRUE)) {
-  BiocManager::install("Biostrings")
+  remotes::install_github("Bioconductor/Biostrings")
 }
 
 # Load packages

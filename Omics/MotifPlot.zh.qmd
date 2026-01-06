@@ -24,14 +24,11 @@ Motif图显示序列logo，其中每个核苷酸的高度代表其在该位置�
 
 ```{r packages setup, message=FALSE, warning=FALSE, output=FALSE}
 # 安装包
-if (!requireNamespace("BiocManager", quietly = TRUE)) {
-  install.packages("BiocManager")
-}
 if (!requireNamespace("motifStack", quietly = TRUE)) {
-  BiocManager::install("motifStack")
+  remotes::install_github("jianhong/motifStack")
 }
 if (!requireNamespace("Biostrings", quietly = TRUE)) {
-  BiocManager::install("Biostrings")
+  remotes::install_github("Bioconductor/Biostrings")
 }
 
 # 加载包
