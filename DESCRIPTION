@@ -95,7 +95,6 @@ Imports:
     rstatix,
     ggtext,
     ggridges,
-    gghalves,
     ggstatsplot,
     palmerpenguins,
     d3heatmap,
@@ -132,7 +131,6 @@ Imports:
     Rmisc,
     grafify,
     beanplot,
-    ggbump,
     rms,
     visdat,
     packcircles,
@@ -164,7 +162,6 @@ Imports:
     vcd,
     DescTools,
     NeuralNetTools,
-    ggpol,
     FactoMineR,
     factoextra,
     EnhancedVolcano,
@@ -232,7 +229,9 @@ Imports:
     calendR,
     CMplot,
     ggmsa,
-    ggdiceplot
+    gground,
+    ggdiceplot,
+    ggprism
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
@@ -266,6 +265,4 @@ Remotes:
     haleyjeppson/ggmosaic,
     ibecav/CGPfunctions,
     davidsjoberg/ggstream,
-    erocoar/gghalves,
-    davidsjoberg/ggbump,
-    erocoar/ggpol
+    dxsbiocc/gground
