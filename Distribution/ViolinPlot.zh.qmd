@@ -37,7 +37,7 @@ if (!requireNamespace("tidyr", quietly = TRUE)) {
   install.packages("tidyr")
 }
 if (!requireNamespace("gghalves", quietly = TRUE)) {
-  install.packages("gghalves")
+  install.packages("https://cran.r-project.org/src/contrib/Archive/gghalves/gghalves_0.1.4.tar.gz")
 }
 if (!requireNamespace("dplyr", quietly = TRUE)) {
   install.packages("dplyr")

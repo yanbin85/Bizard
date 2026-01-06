@@ -35,7 +35,7 @@ if (!requireNamespace("ggpol", quietly = TRUE)) {
   install.packages("ggpol")
 }
 if (!requireNamespace("ggplot2", quietly = TRUE)) {
-  install.packages("ggplot2")
+  install.packages("https://cran.r-project.org/src/contrib/Archive/ggpol/ggpol_0.0.7.tar.gz")
 }
 
 # 加载包
