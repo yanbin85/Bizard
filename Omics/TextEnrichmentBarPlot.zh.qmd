@@ -2,7 +2,7 @@
 title: "文字叠加的富集分析柱状图"
 author:
   - "**[编辑]** [严彬](https://github.com/yanbin85)"
-  - "**[贡献]** ."
+  - "**[贡献]**  [郑虎](https://github.com/ZhengTiger)."
 ---
 
 文字叠加富集柱状图是一种用于高密度展示功能富集分析结果（如 GO、KEGG）的可视化工具。它通常以圆角柱状图的长度映射富集显著性（adjust p value），并利用图形内部空间直接叠加标注通路名称与核心基因列表，同时辅以左侧色块与气泡来区分功能分类及基因数量。
@@ -23,11 +23,14 @@ author:
 
 ```{r packages setup, message=FALSE, warning=FALSE, output=FALSE}
 # 安装包
-if (!requireNamespace("tidyverse", quietly = TRUE)) install.packages("tidyverse")
-if (!requireNamespace("ggprism", quietly = TRUE)) install.packages("ggprism")
-if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+if (!requireNamespace("tidyverse", quietly = TRUE)){
+  install.packages("tidyverse")
+} 
+if (!requireNamespace("ggprism", quietly = TRUE)){
+  install.packages("ggprism")
+} 
 if (!requireNamespace("gground", quietly = TRUE)) {
-  devtools::install_github("dxsbiocc/gground")
+  remotes::install_github("dxsbiocc/gground")
 }
 # 加载包
 library(tidyverse)
