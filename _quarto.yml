@@ -146,6 +146,8 @@ website:
         contents:
           - text: "Chord Diagram"
             href: Proportion/ChordDiagram.qmd
+          - text: "Dice Plot"
+            href: Proportion/DicePlot.qmd
           - text: "Network Graph"
             href: Proportion/Network.qmd
           - text: "Sankey Diagram"
@@ -585,6 +587,8 @@ format:
     code-overflow: wrap
     highlight-style: github
     toc: true
+    date-modified: last-modified
+    date-format: iso
     quarto-required: ">=1.7.33" # prelude.R uses `QUARTO_DOCUMENT_PATH` environment variable
 
 filters:

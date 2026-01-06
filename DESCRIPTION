@@ -106,7 +106,6 @@ Imports:
     crosstalk,
     htmltools,
     hiplotlib,
-    destiny,
     clusterProfiler,
     Mfuzz,
     fishplot,
@@ -233,7 +232,8 @@ Imports:
     calendR,
     CMplot,
     ggmsa,
-    gground
+    gground,
+    ggdiceplot
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
@@ -241,7 +241,6 @@ Remotes:
     talgalili/d3heatmap,
     ropensci-review-tools/babelquarto,
     hiplot/hiplotlib,
-    theislab/destiny,
     junjunlab/scRNAtoolVis,
     MatthiasFutschik/Mfuzz,
     chrisamiller/fishplot,
