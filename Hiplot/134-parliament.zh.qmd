@@ -32,7 +32,7 @@ if (!requireNamespace("jsonlite", quietly = TRUE)) {
   install.packages("jsonlite")
 }
 if (!requireNamespace("ggpol", quietly = TRUE)) {
-  install.packages("ggpol")
+  install.packages("https://cran.r-project.org/src/contrib/Archive/ggpol/ggpol_0.0.7.tar.gz")
 }
 if (!requireNamespace("ggplot2", quietly = TRUE)) {
   install.packages("https://cran.r-project.org/src/contrib/Archive/ggpol/ggpol_0.0.7.tar.gz")
