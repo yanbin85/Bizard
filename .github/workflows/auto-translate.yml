@@ -177,6 +177,7 @@ jobs:
           AI_Model_BASE_URL: ${{ secrets.AI_Model_BASE_URL }}
           AI_Model_Name: ${{ secrets.AI_Model_Name }}
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          IS_PUSH_EVENT: ${{ steps.pr-info.outputs.is_push }}
         run: |
           # Function to check if file is in blacklist using glob patterns
           is_blacklisted() {
@@ -209,7 +210,7 @@ jobs:
             
             # Check blacklist
             if is_blacklisted "$file"; then
-              echo "  ⊗ Skipped (blacklisted): $file"
+              echo "  [SKIPPED] Blacklisted: $file"
               continue
             fi
             
@@ -226,14 +227,20 @@ jobs:
             
             # Check if pair exists in the PR changes
             if echo "$CHANGED_FILES" | grep -qw "$pair"; then
-              echo "  ✓ Both language versions present in PR"
+              echo "  [OK] Both language versions present in PR"
               files_with_pairs+=("$file|$pair")
             else
               # Check if pair exists in repo
               if [ -f "$pair" ]; then
-                echo "  ⚠ Translation pair exists but not in PR, skipping auto-translation"
+                # Pair exists in repo - behavior depends on event type
+                if [ "$IS_PUSH_EVENT" = "true" ]; then
+                  echo "  [SKIPPED] Translation pair exists in repo (push event - avoiding overwrite)"
+                  echo "            To update translation, modify both files or create a PR"
+                else
+                  echo "  [WARNING] Translation pair exists but not in PR, skipping auto-translation"
+                fi
               else
-                echo "  → Will auto-translate to: $pair"
+                echo "  [TRANSLATE] Will auto-translate to: $pair"
                 files_to_translate+=("$file")
               fi
             fi

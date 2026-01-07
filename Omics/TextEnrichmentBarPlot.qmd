@@ -11,7 +11,7 @@ This chart form alters the traditional layout where text and graphics are separa
 
 ## Example
 
-![](../images/Omics/TextEnrichmentBarplot_demo.png){fig-alt="NetworkPlot DEMO" fig-align="center" width="60%"}
+![](../images/Omics/TextEnrichmentBarplot_demo.png){fig-alt="TextEnrichmentBarplot DEMO" fig-align="center" width="60%"}
 
 ## Setup
 
@@ -95,7 +95,7 @@ To facilitate the tutorial, we import pathway enrichment data from network pharm
 
 ```{r load data 2, message=FALSE}
 # 1. Read Data
-raw_data <- read_tsv("files/DAVID.txt")
+raw_data <- read_tsv("https://bizard-1301043367.cos.ap-guangzhou.myqcloud.com/DAVID.txt")
 
 # 2. Data Cleaning
 # Convert DAVID format to the standard format required for plotting
