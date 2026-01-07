@@ -2,17 +2,16 @@
 title: "Motif图"
 author:
   - "**[贡献]** [金子伦](https://github.com/kintilin)"
-  - "**[编辑]** GitHub Copilot"
+  - "**[编辑]** [郑虎](https://github.com/ZhengTiger)."
 ---
 
-Motif图，也称为序列logo图，用于可视化生物序列（DNA、RNA或蛋白质）中的保守模式。它们常用于转录因子结合位点分析、miRNA靶标预测以及其他序列motif发现应用。每个字母的高度代表该位置的信息含量，帮助研究人员识别重要的结合位点或功能区域。
+对于motif logo图的可视化，ggseqlogo是一个基于ggplot2的R包，专门用于绘制序列motif的logo图。相比于其他motif可视化工具，ggseqlogo具有语法简洁、输出格式灵活、与ggplot2生态系统完全兼容等优点。该包支持多种序列格式输入，包括位置频率矩阵(PFM)、位置权重矩阵(PWM)和序列向量，并提供了丰富的自定义选项来调整logo图的外观。
 
 ## 示例
 
-<!-- 注意：需要添加演示图像。请将issue中的motif plot图像添加到 ../images/Omics/MotifPlot_demo.png -->
-<!-- ![](../images/Omics/MotifPlot_demo.png){fig-alt="MotifPlot DEMO" fig-align="center" width="60%"} -->
+![](../images/Omics/MotifPlot_demo.png){fig-alt="MotifPlot DEMO1" fig-align="center" width="60%"}
 
-Motif图显示序列logo，其中每个核苷酸的高度代表其在该位置的信息含量，有助于识别生物序列中的保守结合位点或功能区域。
+Motif logo图是用于展示DNA、RNA或蛋白质序列中保守模式的图形，通过每个位置的字符大小来显示该位置的信息含量。
 
 ## 环境配置
 
@@ -20,23 +19,28 @@ Motif图显示序列logo，其中每个核苷酸的高度代表其在该位置�
 
 -   编程语言：R
 
--   依赖包：`motifStack`; `Biostrings`
+-   依赖包：`ggplot2`, `ggseqlogo`, `cowplot`, `gridExtra`
 
 ```{r packages setup, message=FALSE, warning=FALSE, output=FALSE}
 # 安装包
-if (!requireNamespace("BiocManager", quietly = TRUE)) {
-  install.packages("BiocManager")
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  install.packages("ggplot2")
 }
-if (!requireNamespace("motifStack", quietly = TRUE)) {
-  BiocManager::install("motifStack")
+if (!requireNamespace("ggseqlogo", quietly = TRUE)) {
+  install.packages("ggseqlogo")
 }
-if (!requireNamespace("Biostrings", quietly = TRUE)) {
-  BiocManager::install("Biostrings")
+if (!requireNamespace("cowplot", quietly = TRUE)) {
+  install.packages("cowplot")
+}
+if (!requireNamespace("gridExtra", quietly = TRUE)) {
+  install.packages("gridExtra")
 }
 
 # 加载包
-library(motifStack)
-library(Biostrings)
+library(ggplot2)
+library(ggseqlogo)
+library(cowplot)
+library(gridExtra)
 ```
 
 ```{r}
@@ -45,34 +49,24 @@ sessioninfo::session_info("attached")
 
 ## 数据准备
 
-Motif数据可以来自各种来源，如转录因子结合位点数据库（例如JASPAR、TRANSFAC），或从头motif发现工具（例如MEME）。motifStack包可以导入多种格式的motif，包括位置频率矩阵（PFM）或位置权重矩阵（PWM）。
+使用内置数据集 `ggseqlogo_sample`，该数据集包含三个变量、两种不同的输入形式：
+- seqs_dna：从JASPAR的FASTA文件中获得的12个转录因子的结合位点。格式为字符串向量组成的list，list的名称表示JASPAR ID。
+- seqs_aa：从Wagih等人获得的激酶底物磷酸化位点组。格式与seqs_dna相同。
+- pfms_dna：从JASPAR获得的四个转录因子的位置频率matrix组成的list，list的名称表示JASPAR ID。
 
 ```{r load data, message=FALSE, warning=FALSE}
-# 从motifStack包加载示例motif数据
-library(motifStack)
+data(ggseqlogo_sample)
 
-# 导入示例motif
-pcm <- read.table(system.file("extdata", "bin_SOLEXA.pcm", 
-                              package = "motifStack"))
-pcm <- pcm[, 3:ncol(pcm)]
-rownames(pcm) <- c("A", "C", "G", "T")
+head(pfms_dna,n = 1)
 
-# 标准化每列使其总和为1.0（将PCM转换为PFM）
-pcm_matrix <- as.matrix(pcm)
-pfm_matrix <- apply(pcm_matrix, 2, function(x) x / sum(x))
-
-# 转换为pfm对象
-motif <- new("pfm", mat = pfm_matrix, name = "RNA_motif")
-
-# 查看标准化后的motif矩阵
-head(pfm_matrix, 4)
+head(seqs_aa, n = 1)[[1]][1:3]
 ```
 
 ## 可视化
 
 ### 1. 基础Motif图
 
-基础motif图显示序列logo，其中每个核苷酸的高度代表其在该位置的信息含量。
+ggseqlogo 包可以使用 `geom_logo` 函数并基于 ggplot2 语法进行绘制，也可以使用封装后的函数 `ggseqlogo` 函数进行绘制，二者共享相同的参数。
 
 ```{r}
 #| label: fig-1BasicMotif
@@ -80,87 +74,266 @@ head(pfm_matrix, 4)
 #| out.width: "95%"
 #| warning: false
 
-# 基础motif图
-plotMotifLogo(motif)
+# 使用序列向量
+ggseqlogo(seqs_dna$MA0001.1)
+# 使用PFM矩阵
+ggseqlogo(pfms_dna$MA0018.2)
+#使用ggplot语法绘图
+ggplot() + geom_logo( seqs_dna$MA0001.1 ) + theme_logo()
 ```
 
-### 2. 自定义颜色Motif图
+上图为MA0001.1的motif结果展示
 
-可以应用不同的颜色方案来突出显示不同类型的核苷酸或氨基酸。
+::: callout-tip
+**关键参数: **
+
+- data：输入数据：序列向量、矩阵或列表
+- method = "bits"：计算方法："bits"或"probability"
+- seq_type = "auto"：序列类型："auto"、"dna"、"rna"、"aa"
+- namespace = NULL：自定义字符命名空间
+- font = "roboto_medium"：字体类型
+- stack_width = 0.95：字符堆叠宽度
+- rev_stack_order = FALSE：是否反转堆叠顺序
+- col_scheme = "auto"：颜色方案
+- low_col = 'black'：低bits/probability颜色
+- high_col = 'yellow'：高bits/probability颜色
+- na_col = 'grey20'：NA值颜色
+- plot = TRUE：是否立即绘图
+:::
+
+### 2. 多motif绘图
+
+你可以使用facet_wrap或facet_grid来组合多个logo图：
 
 ```{r}
-#| label: fig-2ColorMotif
-#| fig-cap: "自定义颜色motif图"
+#| label: fig-2MultiMotif
+#| fig-cap: "多motif绘图"
 #| out.width: "95%"
 #| warning: false
 
-# 自定义颜色方案的motif图
-# 颜色方案：A=绿色，C=蓝色，G=橙色，T=红色
-color <- c(A = "#00CC00", C = "#0000CC", G = "#FFB300", T = "#CC0000")
-plotMotifLogo(motif, ic.scale = TRUE, 
-              colset = color,
-              font = "sans")
+# 绘制多个motif
+ggseqlogo(seqs_dna, ncol=4)
+
+# 等价于
+p <- ggplot() + geom_logo(seqs_dna) + theme_logo() + 
+  facet_wrap(~seq_group, ncol=4, scales='free_x')
 ```
 
-### 3. 堆叠Motif图
+### 3. Motif图美化
 
-多个motif可以堆叠在一起进行比较，这在比较不同转录因子或条件下的结合位点时很有用。
+#### 3.1 调整颜色方案
+
+ggseqlogo 提供了多种预设和自定义颜色方案：
 
 ```{r}
-#| label: fig-3StackedMotif
-#| fig-cap: "堆叠motif图用于比较"
+#| label: fig-3-1ColorMotif1
+#| fig-cap: "调整颜色方案1"
 #| out.width: "95%"
 #| warning: false
 
-# 创建多个motif进行比较
-# 导入额外的示例motif
-pcm1 <- pfm_matrix
-motif1 <- new("pfm", mat = pcm1, name = "Motif_1")
-
-# 创建第二个motif（为演示略作修改）
-pcm2 <- pfm_matrix[, c(2:ncol(pfm_matrix), 1)]
-motif2 <- new("pfm", mat = pcm2, name = "Motif_2")
-
-# 堆叠motif
-motifs <- list(motif1, motif2)
-motifStack(motifs, layout = "stack")
+# DNA序列的预设颜色方案
+ggseqlogo(seqs_dna$MA0001.1, col_scheme='nucleotide')
 ```
 
-### 4. 径向系统发育Motif布局
-
-为了可视化motif之间的进化关系，可以使用径向系统发育布局。
-
 ```{r}
-#| label: fig-4RadialMotif
-#| fig-cap: "径向系统发育motif布局"
+#| label: fig-3-1ColorMotif2
+#| fig-cap: "调整颜色方案2"
 #| out.width: "95%"
 #| warning: false
 
-# motif比较的径向布局
-motifStack(motifs, layout = "radialPhylog")
+# 氨基酸序列的颜色方案
+ggseqlogo(seqs_aa$AKT1, col_scheme='chemistry')
 ```
 
-## 应用
+```{r}
+#| label: fig-3-1ColorMotif3
+#| fig-cap: "调整颜色方案3"
+#| out.width: "95%"
+#| warning: false
+
+# 自定义离散颜色方案
+cs1 <- make_col_scheme(chars=c('A', 'T', 'C', 'G'), 
+                      groups=c('gr1', 'gr1', 'gr2', 'gr2'), 
+                      cols=c('purple', 'purple', 'blue', 'blue'))
+ggseqlogo(seqs_dna$MA0001.1, col_scheme=cs1)
+```
+
+```{r}
+#| label: fig-3-1ColorMotif4
+#| fig-cap: "调整颜色方案4"
+#| out.width: "95%"
+#| warning: false
+
+# 自定义连续颜色方案
+cs2 <- make_col_scheme(chars=c('A', 'T', 'C', 'G'), values=1:4)
+ggseqlogo(seqs_dna$MA0001.1, col_scheme=cs2)
+```
+
+#### 3.2 调整字体和堆叠
+
+```{r}
+#| label: fig-3-2FontMotif
+#| fig-cap: "调整字体和堆叠"
+#| out.width: "95%"
+#| warning: false
+
+# 查看所有可用字体
+list_fonts(F)
+
+# 使用特定字体
+ggseqlogo(seqs_dna$MA0001.1, font='helvetica_bold', stack_width=0.8)
+```
+
+#### 3.3 调整坐标轴和主题
+
+```{r}
+#| label: fig-3-3ThemeMotif
+#| fig-cap: "调整坐标轴和主题"
+#| out.width: "95%"
+#| warning: false
+
+ggseqlogo(seqs_dna$MA0001.1) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  labs(x='Position', y='Bits', title='Transcription Factor Binding Motif')
+```
+
+### 4. 高级功能
+
+绘图方法选择：
+
+ggseqlogo 支持两种序列 logo 计算方法：
+
+```{r}
+#| label: fig-4MethodMotif
+#| fig-cap: "序列 logo 计算方法"
+#| out.width: "95%"
+#| warning: false
+
+p1 <- ggseqlogo(seqs_dna$MA0001.1, method='bits')  # 信息量
+p2 <- ggseqlogo(seqs_dna$MA0001.1, method='prob')  # 概率
+gridExtra::grid.arrange(p1, p2, ncol=2)
+```
+
+自定义序列类型和命名空间：
+
+```{r}
+#| label: fig-4NamespaceMotif1
+#| fig-cap: "序列类型和命名空间1"
+#| out.width: "95%"
+#| warning: false
+
+# 数值序列
+seqs_numeric <- chartr('ATGC', '1234', seqs_dna$MA0001.1)
+ggseqlogo(seqs_numeric, method='prob', namespace=1:4)
+```
+
+```{r}
+#| label: fig-4NamespaceMotif2
+#| fig-cap: "序列类型和命名空间2"
+#| out.width: "95%"
+#| warning: false
+
+# 希腊字母序列
+seqs_greek <- chartr('ATGC', 'δεψλ', seqs_dna$MA0001.1)
+ggseqlogo(seqs_greek, namespace='δεψλ', method='bits')
+```
+
+自定义高度logo：
+
+```{r}
+#| label: fig-4CustomHeightMotif
+#| fig-cap: "自定义高度logo"
+#| out.width: "95%"
+#| warning: false
+
+# 创建自定义高度矩阵
+custom_mat <- matrix(rnorm(20), nrow=4, 
+                    dimnames=list(c('A', 'T', 'G', 'C')))
+ggseqlogo(custom_mat, method='custom', seq_type='dna') + 
+  ylab('my custom height')
+```
+
+序列标识：
+
+```{r}
+#| label: fig-4LabelMotif
+#| fig-cap: "序列标识"
+#| out.width: "95%"
+#| warning: false
+
+ggplot() + 
+  annotate('rect', xmin=0.5, xmax=3.5, ymin=-0.05, ymax=1.9, 
+           alpha=0.1, col='black', fill='yellow') +
+  geom_logo(seqs_dna$MA0001.1, stack_width=0.90) + 
+  annotate('segment', x=4, xend=8, y=1.2, yend=1.2, size=2) +  #需要注意的是在ggplot2 3.4.0版本开始，调整线条粗细的size参数已经改变为了linewidth参数，建议使用新版本ggplot2的用户将size改为linewidth。
+  annotate('text', x=6, y=1.3, label='Text annotation') + 
+  theme_logo()
+```
+
+组合多种图形：
+
+```{r}
+#| label: fig-4CowplotMotif
+#| fig-cap: "组合多种图形"
+#| out.width: "95%"
+#| warning: false
+
+# 生成序列logo
+p1 <- ggseqlogo(seqs_dna$MA0008.1) + 
+  theme(axis.text.x=element_blank())
+
+# 创建序列比对数据
+aln <- data.frame(
+  letter=strsplit('AGATAAGATGATAAAAAGATAAGA', '')[[1]], 
+  species=rep(c('a', 'b', 'c'), each=8),
+  x=rep(1:8, 3)
+)
+aln$mut <- 'no'
+aln$mut[c(2,15,20,23)] <- 'yes'
+
+# 生成序列比对图
+p2 <- ggplot(aln, aes(x, species)) +
+  geom_text(aes(label=letter, color=mut, size=mut)) + 
+  scale_x_continuous(breaks=1:10, expand=c(0.105, 0)) + 
+  xlab('') + 
+  scale_color_manual(values=c('black', 'red')) + 
+  scale_size_manual(values=c(5, 6)) + 
+  theme_logo() + 
+  theme(legend.position='none', axis.text.x=element_blank())
+
+# 创建保守性柱状图
+bp_data <- data.frame(x=1:8, conservation=sample(1:100, 8))
+p3 <- ggplot(bp_data, aes(x, conservation)) +
+  geom_bar(stat='identity', fill='grey') + 
+  theme_logo() + 
+  scale_x_continuous(breaks=1:10, expand=c(0.105, 0)) + 
+  xlab('')
+
+# 组合图形
+cowplot::plot_grid(p1, p2, p3, ncol=1, align='v')
+```
+
+与其他工具集成：
+
+ggseqlogo 可以与其他生物信息学包配合使用，如 ggmotif 包可以直接从 MEME 结果文件中提取 motif 并使用 ggseqlogo 进行可视化，universalmotif 包也提供了与 ggseqlogo 的集成功能。
+
+
+## 应用场景
 
 Motif图在基因组学和分子生物学研究中应用广泛：
 
-1. **转录因子结合位点分析**：识别和可视化基因调控区域中转录因子的保守结合序列。
+1. **转录因子结合位点分析**：展示DNA序列中转录因子的保守结合模式。
 
-2. **miRNA靶标预测**：显示miRNA结合位点中的保守种子序列。
+2. **蛋白质结构域分析**：显示蛋白质序列中功能结构域的保守氨基酸。
 
-3. **蛋白质结构域分析**：可视化蛋白质家族中保守的氨基酸模式。
+3. **多序列比对可视化**：展示多序列比对中的保守区域。
 
-4. **ChIP-seq分析**：表示从染色质免疫共沉淀测序数据中发现的富集序列motif。
+4. **ChIP-seq分析**：可视化ChIP-seq实验鉴定出的富集motif。
 
-5. **比较基因组学**：比较不同物种或条件下的调控motif。
+5. **基因组特征分析**：展示基因组特定区域的序列特征。
 
 ## 参考文献
 
-1. Ou, J., Wolfe, S. A., Brodsky, M. H., & Zhu, L. J. (2018). motifStack for the analysis of transcription factor binding site evolution. *Nature Methods, 15*(1), 8–9. <https://doi.org/10.1038/nmeth.4555>
+\[1\] Wagih O. ggseqlogo: a versatile R package for drawing sequence logos. Bioinformatics. 2017;33(22):3645-3647. doi:10.1093/bioinformatics/btx469
 
-2. Bioconductor motifStack包：<https://bioconductor.org/packages/release/bioc/html/motifStack.html>
-
-## 共享者
-
--   **编辑**：GitHub Copilot。
--   **审阅**：待分配。
