@@ -188,10 +188,10 @@ website:
             href: Omics/KeggPathwayPlot.qmd
           - text: "MultiSeqsAlignment"
             href: Omics/MultiSeqsAlignment.qmd
-          - text: "MotifPlot"
-            href: Omics/MotifPlot.qmd
           - text: "GWAS Circos Plot"
             href: Omics/GwasSnpPlot.qmd
+          - text: "MotifPlot"
+            href: Omics/MotifPlot.qmd
           - text: "TextEnrichmentBarPlot"
             href: Omics/TextEnrichmentBarPlot.qmd
 
